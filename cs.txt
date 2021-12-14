@@ -1,9 +1,0 @@
-operating system
-backtracking
-greedy
-python
-java
-javascript
-cobol
-pascal
-matlab

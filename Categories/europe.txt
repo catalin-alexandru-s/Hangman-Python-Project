@@ -3,7 +3,7 @@ suedia
 islanda
 danemarca
 finlanda
-marea britanie
+britania
 irlanda
 franta
 spania
@@ -17,7 +17,6 @@ germania
 elvetia
 italia
 liechtenstein
-san marino
 vatican
 austria
 malta
@@ -42,6 +41,6 @@ kosovo
 muntenegru
 croatia
 slovenia
-bosnia si hertegovina
+bosnia
 georgia
 armenia

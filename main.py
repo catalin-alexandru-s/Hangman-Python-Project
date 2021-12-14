@@ -1,94 +1,111 @@
 import random
 import string
+import json
 
-print(
-    "Welcome to hangman, please choose the number of the available categories:\n1-sport\n2-computer science\n3-europe\n")
-
-done = False
-while not done:
-    category = input()
-    if category == "1":
-        with open('sport.txt', 'r') as file:
-            words = file.readlines()
-            print('Total Words:', len(words))
-            break
-    elif category == "2":
-        with open('cs.txt', 'r') as file:
-            words = file.readlines()
-            print('Total Words:', len(words))
-            break
-    elif category == "3":
-        with open('europe.txt', 'r') as file:
-            words = file.readlines()
-            print('Total Words:', len(words))
-            break
-    else:
-        print("Please select one of the available categories")
+SAVE_PATH = "Result\\results.json"
 
 
-def get_valid_word(words):
-    word = random.choice(words)  # Se extrage un cuvant random din fisierul dat ca input
-    while '-' in word or ' ' in word:  # cat timp avem una din cele doua semne, continua sa alegi
-        word = random.choice(words)
-    return word.upper()
+def get_categories():
+    try:
+        with open("Categories\\categories.txt", 'r') as f:
+            return [i[:-1] for i in f.readlines()]
+    except FileNotFoundError as fnf_error:
+        print(fnf_error)
 
 
-def hangman():
-    word = get_valid_word(words)[:-1]
-    lettersWord = set(word)  # literele in cuvant
+def user_chose(options, str):
+    while True:
+        choose = input(str)
+        if choose.isnumeric():
+            choose = int(choose)
+            if choose <= len(options):
+                return options[choose]
+        elif choose in options:
+            return choose
+        else:
+            print(f"Type something valid, either a number between 0 and {len(options) - 1}")
+
+
+def get_word_list(cat):
+    try:
+        with open(f"Categories\\{cat}.txt") as f:
+            return [i[:-1] for i in f.readlines()]
+    except FileNotFoundError as fnf_error:
+        print(fnf_error)
+
+
+def hangman(game_rounds):
+    categories = get_categories()
+    category = user_chose(categories, "Choose a category: ")
+    words = get_word_list(category)
+    word = random.choice(words).upper()
+    letters_set = set(word)
     alphabet = set(string.ascii_uppercase)
-    lettersUsed = set()  # ce a ghicit jucatorul pana acum
+    lettersUsed = set()
     errors = 0
-    tries = len(word)  # incercari determinate de catre lungimea cuvantului
+    tries = len(word)
 
-    while len(lettersWord) > 0 and tries > 0:
+    while len(letters_set) > 0 and tries > 0:
 
         print('You have', tries, 'tries left and you have used these letters: ', ' '.join(lettersUsed))
-        # urmareste progresul jucatorului la cuvantul repsectiv
-        word_list = [letter if letter in lettersUsed else '_' for letter in word]
-        print('Current word: ', ' '.join(word_list)) # lista pentru a urmari cate litere a folosit jucatorul
 
-        letterUser = input('Guess a letter: ').upper()
-        if letterUser in alphabet - lettersUsed: # daca e caracter valid din alfabet, adauga in lista de litere folosite
-            lettersUsed.add(letterUser)
-            if letterUser in lettersWord: # daca jucatorul a ghicit un cuvant, acel cuvant va fi eliminat din lista pentru a nu se repeta litera respectiva
-                lettersWord.remove(letterUser)
+        word_list = [letter if letter in lettersUsed else '_' for letter in word]
+        print('Current word: ', ' '.join(word_list))
+
+        input_letter = input('Guess a letter: ').upper()
+        if input_letter in alphabet - lettersUsed:
+            lettersUsed.add(input_letter)
+            if input_letter in letters_set:
+                letters_set.remove(input_letter)
                 print('')
 
             else:
-                tries = tries - 1  # scade din incercari daca gresim
-                errors = errors + 1  # crestem nr de litere gresite pentru a afisa pt scorul final
-                print('\nYour letter,', letterUser, 'is not in the word.')
+                tries = tries - 1
+                errors = errors + 1
+                print('\nYour letter,', input_letter, 'is not in the word.')
 
-        elif letterUser in lettersUsed:
+        elif input_letter in lettersUsed:
             print('\nYou have already used that letter. Guess another letter.')
 
         else:
             print('\nThat is not a valid letter.')
 
-    if tries == 0:  # daca am irosit numarul de vieti atunci am pierdut
+    if tries == 0:
         print(f"You didn't guess, the word was: {word.upper()}")
-    # with open('GeneralEvidence.txt', 'a+') as file:
-    #    counter = int(file.readline()) + 1
-    #   file.write(str(counter))
-    #  file.close()
     else:
-        if category == "2":
-            with open('CsScoreEvidence.txt', 'a+') as file:
-                file.write(f'{word}\n')
-                file.close()
-        elif category == "1":
-            with open('SportScoreEvidence.txt', 'a+') as file:
-                file.write(f'{word}\n')
-                file.close()
-        elif category == "3":
-            with open('EuropeScoreEvidence.txt', 'a+') as file:
-                file.write(f'{word}\n')
-                file.close()
         print(
             f"{word.upper()}, {errors}, (The user tried {errors} letters that do not exist in the word from a total of",
             len(word), "letters)")
+    return {
+        "round": game_rounds,
+        "category": category,
+        "word": word,
+        "attempts": len(word),
+        "wrong-attempts": errors
+    }
 
 
-if __name__ == '__main__':
-    hangman()
+def game():
+    try:
+        with open(SAVE_PATH, 'r') as json_read:
+            game_results = json.load(json_read)
+    except Exception:
+        game_results = []
+
+    game_rounds = len(game_results)
+    while True:
+        game_rounds += 1
+        result = hangman(game_rounds)
+        game_results.append(result)
+        with open(SAVE_PATH, 'w') as json_file:
+            json.dump(game_results, json_file, indent=2)
+        new_game = user_chose(['yes', 'no', 'n', 'y'], "\nWanna play again? (y/n): ")
+        if new_game == 'y' or new_game == 'yes':
+            print("Continuing...")
+        elif new_game.lower() == 'n' or new_game.lower() == 'no':
+            print("Game ended.")
+            break
+
+
+if __name__ == "__main__":
+    game()
